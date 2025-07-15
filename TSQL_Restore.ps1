@@ -670,9 +670,10 @@ if(-not ([string]::IsNullOrEmpty($databaseName))) {
 
 
     #Create tail backup for the database(s) and pre-restore snapshot on FSxN
+    $timestamp = (Get-Date -Format "yyyyMMddHHmmss")
     try {
         Write-Output "Taking tail log backup for database $databaseName"
-        $tailbackup = $snapshot+'_taillog.bkm'
+        $tailbackup = $snapshot+'_'+$timestamp+'_taillog.bkm'
 
         $sqlbackuptail = "BACKUP LOG "+$databaseList+" TO DISK = '"+$tailbackup+"' WITH NORECOVERY;"
         $Command.CommandText = $offlinedatabases
@@ -682,20 +683,7 @@ if(-not ([string]::IsNullOrEmpty($databaseName))) {
     } catch {
        Write-Output "Failed to take tail log backup"
     }
-     $timestamp = (Get-Date -Format "yyyyMMddHHmmss")
-     foreach ($record in $volumes.records) {
-         $volumeUUID = $record.uuid
-         $volumeName = $record.name
-         $presnapshot = $databaseName+'_prerestore_'+$timestamp
-         try {
-             Write-Output "Taking pre-restore snapshot for volume $volumeName"
-             $snapshotResult = Restore-ONTAPSnapshot $volumeUUID $volumeName $presnapshot 'CREATE'
-         } catch {
-              Write-Output "Failed to create pre-restore snapshot for volume $volumeName. Aborting restore process"
-                }
-      }
-
-
+     
 
     #Remove disks from Windows cluster disks if clustered
     if ($isClustered -eq $True) {
